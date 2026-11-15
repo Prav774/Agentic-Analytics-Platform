@@ -7,6 +7,8 @@ import type {
   QueryResultResponse,
   QueryRequestPayload,
   ApiErrorResponse,
+  AnalyticsQueryRequestPayload,
+  AnalyticsQueryResponseData,
 } from "../types/api";
 
 const resolvedBaseUrl =
@@ -76,6 +78,16 @@ export const api = {
       ...response.data,
       executionTimeMs: duration,
     };
+  },
+
+  async executeNaturalLanguageQuery(
+    payload: AnalyticsQueryRequestPayload
+  ): Promise<AnalyticsQueryResponseData> {
+    const response = await apiClient.post<AnalyticsQueryResponseData>(
+      "/api/analytics/query",
+      payload
+    );
+    return response.data;
   },
 };
 

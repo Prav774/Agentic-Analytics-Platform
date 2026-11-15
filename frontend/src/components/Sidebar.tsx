@@ -1,7 +1,7 @@
 import React from "react";
 import type { DatasourceSummary } from "../types/api";
 
-export type ActiveTab = "analytics" | "schema" | "datasources";
+export type ActiveTab = "ai" | "manual-sql" | "schema" | "datasources";
 
 interface SidebarProps {
   datasources: DatasourceSummary[];
@@ -81,9 +81,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <nav className="space-y-1">
             <button
               type="button"
-              onClick={() => onSelectTab("analytics")}
+              onClick={() => onSelectTab("ai")}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "analytics"
+                activeTab === "ai"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+              }`}
+            >
+              <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <span>AI Analytics Assistant</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab("manual-sql")}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "manual-sql"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
@@ -93,10 +113,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
                 />
               </svg>
-              <span>Query & Visualizations</span>
+              <span>SQL Query Workspace</span>
             </button>
 
             <button

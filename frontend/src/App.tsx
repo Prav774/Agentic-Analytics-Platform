@@ -1,25 +1,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "./components/Header";
 import { Sidebar, type ActiveTab } from "./components/Sidebar";
+import { AiAnalyticsWorkspace } from "./components/AiAnalyticsWorkspace";
 import { QueryWorkspace } from "./components/QueryWorkspace";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { SchemaExplorer } from "./components/SchemaExplorer";
 import { DatasourcesOverview } from "./components/DatasourcesOverview";
 import { api, extractErrorMessage } from "./services/api";
-import type { DatasourceSummary, QueryResultResponse } from "./types/api";
+import type {
+  DatasourceSummary,
+  QueryResultResponse,
+  AnalyticsQueryResponseData,
+} from "./types/api";
 
 export default function App() {
   const [datasources, setDatasources] = useState<DatasourceSummary[]>([]);
-  const [selectedDatasourceId, setSelectedDatasourceId] = useState<string>("crm");
-  const [activeTab, setActiveTab] = useState<ActiveTab>("analytics");
+  const [selectedDatasourceId, setSelectedDatasourceId] = useState<string>("ecommerce");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("ai");
   const [systemLoading, setSystemLoading] = useState<boolean>(true);
   const [systemError, setSystemError] = useState<string | null>(null);
 
+  // Manual SQL Query State
   const [sql, setSql] = useState<string>("");
   const [rowLimit, setRowLimit] = useState<number>(200);
   const [queryLoading, setQueryLoading] = useState<boolean>(false);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<QueryResultResponse | null>(null);
+
+  // AI Agentic Analytics State
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [currentAiResponse, setCurrentAiResponse] = useState<AnalyticsQueryResponseData | null>(null);
+  const [aiHistory, setAiHistory] = useState<AnalyticsQueryResponseData[]>([]);
+  const [aiSessionId, setAiSessionId] = useState<string | null>(null);
 
   const [tableCount, setTableCount] = useState<number | undefined>(undefined);
 
@@ -31,7 +44,6 @@ export default function App() {
       const data = await api.getDatasources();
       setDatasources(data);
       if (data.length > 0) {
-        // Keep current selected if valid, otherwise pick first
         setSelectedDatasourceId((prev) => {
           const exists = data.some((d) => d.id === prev);
           return exists ? prev : data[0].id;
@@ -68,7 +80,6 @@ export default function App() {
     };
   }, [selectedDatasourceId]);
 
-  // Reset query results when switching datasource
   const handleSelectDatasource = (id: string) => {
     if (id !== selectedDatasourceId) {
       setSelectedDatasourceId(id);
@@ -78,7 +89,7 @@ export default function App() {
     }
   };
 
-  // Execute SQL Query
+  // Execute Manual SQL Query
   const handleExecuteQuery = async () => {
     if (!sql.trim() || !selectedDatasourceId) return;
 
@@ -94,10 +105,51 @@ export default function App() {
     }
   };
 
+  // Execute AI Natural Language Query
+  const handleExecuteAiQuery = async (question: string, datasourceId?: string) => {
+    setAiLoading(true);
+    setAiError(null);
+
+    const dsId = datasourceId || selectedDatasourceId;
+    try {
+      const response = await api.executeNaturalLanguageQuery({
+        question,
+        datasourceId: dsId,
+        sessionId: aiSessionId,
+      });
+
+      setCurrentAiResponse(response);
+      setAiSessionId(response.sessionId);
+      setAiHistory((prev) => [...prev, response]);
+
+      if (response.datasourceId && response.datasourceId !== selectedDatasourceId) {
+        setSelectedDatasourceId(response.datasourceId);
+      }
+    } catch (err) {
+      setAiError(extractErrorMessage(err));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleResetAiSession = () => {
+    setAiSessionId(null);
+    setCurrentAiResponse(null);
+    setAiHistory([]);
+    setAiError(null);
+  };
+
+  const handleOpenInManualWorkspace = (querySql: string, dsId: string) => {
+    setSql(querySql);
+    setSelectedDatasourceId(dsId);
+    setActiveTab("manual-sql");
+    setQueryError(null);
+  };
+
   // Shortcut from SchemaExplorer
   const handleUseTableInQuery = (tableName: string) => {
     setSql(`SELECT * FROM ${tableName} LIMIT 50;`);
-    setActiveTab("analytics");
+    setActiveTab("manual-sql");
     setQueryError(null);
   };
 
@@ -150,8 +202,24 @@ export default function App() {
             </div>
           )}
 
-          {/* Active Tab View */}
-          {activeTab === "analytics" && (
+          {/* Tab 1: AI Natural Language Analytics Workspace */}
+          {activeTab === "ai" && (
+            <AiAnalyticsWorkspace
+              datasources={datasources}
+              selectedDatasourceId={selectedDatasourceId}
+              onSelectDatasource={handleSelectDatasource}
+              onExecuteAiQuery={handleExecuteAiQuery}
+              loading={aiLoading}
+              currentResponse={currentAiResponse}
+              conversationHistory={aiHistory}
+              onResetSession={handleResetAiSession}
+              onOpenInManualWorkspace={handleOpenInManualWorkspace}
+              error={aiError}
+            />
+          )}
+
+          {/* Tab 2: Manual SQL Query Workspace */}
+          {activeTab === "manual-sql" && (
             <div className="space-y-6">
               <QueryWorkspace
                 datasourceId={selectedDatasourceId}
@@ -171,6 +239,7 @@ export default function App() {
             </div>
           )}
 
+          {/* Tab 3: Schema Explorer */}
           {activeTab === "schema" && (
             <SchemaExplorer
               datasourceId={selectedDatasourceId}
@@ -179,6 +248,7 @@ export default function App() {
             />
           )}
 
+          {/* Tab 4: Datasources Overview */}
           {activeTab === "datasources" && (
             <DatasourcesOverview
               datasources={datasources}

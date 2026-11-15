@@ -70,6 +70,13 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(HttpStatus.SERVICE_UNAVAILABLE.value(), HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(), ex.getMessage()));
     }
 
+    @ExceptionHandler(GroqConfigurationException.class)
+    public ResponseEntity<ErrorResponse> handleGroqConfiguration(GroqConfigurationException ex) {
+        log.error("Groq configuration error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), ex.getMessage()));
+    }
+
     @ExceptionHandler(DatasourceOperationException.class)
     public ResponseEntity<ErrorResponse> handleOperation(DatasourceOperationException ex) {
         log.error("Datasource operation error: {}", ex.getMessage(), ex);

@@ -70,3 +70,68 @@ export interface ApiErrorResponse {
   message: string;
   timestamp: string;
 }
+
+export interface AnalyticsQueryRequestPayload {
+  question: string;
+  datasourceId?: string | null;
+  sessionId?: string | null;
+}
+
+export interface QueryIntentInfo {
+  datasourceId: string | null;
+  businessMetric: string | null;
+  dimensions: string[];
+  filters: string[];
+  dateRange: string | null;
+  aggregation: string | null;
+  analysisType: string;
+  ambiguous: boolean;
+  clarificationMessage: string | null;
+}
+
+export interface KpiItemInfo {
+  label: string;
+  value: string;
+  rawValue?: number;
+  format?: string;
+}
+
+export interface VisualizationConfigInfo {
+  chartType: "kpi" | "bar" | "line" | "pie" | "table";
+  xAxisColumn: string | null;
+  yAxisColumn: string | null;
+  title: string;
+  kpis: KpiItemInfo[];
+}
+
+export interface EvidenceInsightInfo {
+  summary: string;
+  observations: string[];
+  trends: string[];
+  comparisons: string[];
+  recommendations: string[];
+}
+
+export interface ExecutionMetadataInfo {
+  executionTimeMs: number;
+  llmModel: string;
+  databaseEngine: string;
+}
+
+export interface AnalyticsQueryResponseData {
+  sessionId: string;
+  question: string;
+  datasourceId: string;
+  datasourceName: string;
+  intent: QueryIntentInfo;
+  sql: string | null;
+  columns: string[];
+  rows: Record<string, any>[];
+  rowCount: number;
+  truncated: boolean;
+  visualization: VisualizationConfigInfo;
+  insights: EvidenceInsightInfo;
+  metadata: ExecutionMetadataInfo;
+  clarificationNeeded: boolean;
+  clarificationPrompt: string | null;
+}
