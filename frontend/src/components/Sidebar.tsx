@@ -10,6 +10,7 @@ interface SidebarProps {
   activeTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
   tableCount?: number;
+  canExecuteManualSql?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -19,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
   tableCount,
+  canExecuteManualSql = true,
 }) => {
   const currentDatasource = datasources.find((d) => d.id === selectedDatasourceId);
 
@@ -116,7 +118,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
                 />
               </svg>
-              <span>SQL Query Workspace</span>
+              <div className="flex-1 flex items-center justify-between">
+                <span>SQL Query Workspace</span>
+                {!canExecuteManualSql && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Restricted
+                  </span>
+                )}
+              </div>
             </button>
 
             <button

@@ -77,6 +77,39 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), ex.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(org.springframework.security.authentication.BadCredentialsException ex) {
+        log.warn("Authentication failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(), "Invalid username or password."));
+    }
+
+    @ExceptionHandler(org.springframework.security.authentication.DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabled(org.springframework.security.authentication.DisabledException ex) {
+        log.warn("Authentication rejected for disabled account: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(), "Account is disabled. Please contact an administrator."));
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase(),
+                        "Access is denied: You do not have sufficient permissions to perform this operation."));
+    }
+
+    @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtException.class)
+    public ResponseEntity<ErrorResponse> handleJwtException(org.springframework.security.oauth2.jwt.JwtException ex) {
+        log.warn("JWT validation failed: {}", ex.getMessage());
+        String msg = "Invalid or expired authentication token.";
+        if (ex.getMessage() != null && ex.getMessage().contains("expired")) {
+            msg = "The authentication token has expired. Please log in again.";
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(), msg));
+    }
+
     @ExceptionHandler(DatasourceOperationException.class)
     public ResponseEntity<ErrorResponse> handleOperation(DatasourceOperationException ex) {
         log.error("Datasource operation error: {}", ex.getMessage(), ex);
@@ -89,6 +122,6 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                        "An unexpected server error occurred: " + ex.getMessage()));
+                        "An unexpected server error occurred. Please contact system support."));
     }
 }

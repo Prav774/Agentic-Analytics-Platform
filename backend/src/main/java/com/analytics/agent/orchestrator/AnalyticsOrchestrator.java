@@ -71,12 +71,23 @@ public class AnalyticsOrchestrator {
             throw new IllegalArgumentException("Question must not be blank.");
         }
 
+        // Extract authenticated user identity
+        String currentUserId = null;
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !("anonymousUser".equals(auth.getPrincipal()))) {
+            currentUserId = auth.getName();
+        }
+
         // 1. Resolve Session and Validate Datasource Consistency for Existing Session
         String sessionId = sessionService.resolveSessionId(request.sessionId());
 
         if (request.sessionId() != null && !request.sessionId().isBlank()) {
             if (request.datasourceId() != null && !request.datasourceId().isBlank()) {
-                sessionService.validateDatasourceForSession(sessionId, request.datasourceId());
+                if (currentUserId != null) {
+                    sessionService.validateDatasourceForSession(sessionId, request.datasourceId(), currentUserId);
+                } else {
+                    sessionService.validateDatasourceForSession(sessionId, request.datasourceId());
+                }
             }
         }
 
@@ -84,7 +95,9 @@ public class AnalyticsOrchestrator {
         llmClientService.validateConfiguration();
 
         // 3. Determine and Validate Datasource
-        ConversationSessionService.ConversationSession existingSession = sessionService.getSession(sessionId);
+        ConversationSessionService.ConversationSession existingSession = currentUserId != null
+                ? sessionService.getSession(sessionId, currentUserId)
+                : sessionService.getSession(sessionId);
         String boundDatasourceId = existingSession != null ? existingSession.getDatasourceId() : null;
 
         String targetDatasourceId = request.datasourceId();
@@ -98,7 +111,9 @@ public class AnalyticsOrchestrator {
             }
         }
 
-        String sessionHistory = sessionService.formatHistoryForPrompt(sessionId, targetDatasourceId);
+        String sessionHistory = currentUserId != null
+                ? sessionService.formatHistoryForPrompt(sessionId, targetDatasourceId, currentUserId)
+                : sessionService.formatHistoryForPrompt(sessionId, targetDatasourceId);
 
         // 4. Intent Analysis
         QueryIntent intent = intentAnalyzerAgent.analyzeIntent(request.question(), targetDatasourceId, sessionHistory);
@@ -133,7 +148,11 @@ public class AnalyticsOrchestrator {
         }
 
         // Bind session to active datasource
-        sessionService.getOrCreateSession(sessionId, finalDatasourceId);
+        if (currentUserId != null) {
+            sessionService.getOrCreateSession(sessionId, finalDatasourceId, currentUserId);
+        } else {
+            sessionService.getOrCreateSession(sessionId, finalDatasourceId);
+        }
 
         // 5. Retrieve Live Schema Context via MCP
         DatasourceSchemaContext schemaContext = schemaContextAgent.getSchemaContext(finalDatasourceId);
@@ -180,14 +199,26 @@ public class AnalyticsOrchestrator {
         );
 
         // 11. Record turn in session memory
-        sessionService.recordTurn(
-                sessionId,
-                request.question(),
-                intent,
-                executableSql,
-                insights.summary(),
-                finalDatasourceId
-        );
+        if (currentUserId != null) {
+            sessionService.recordTurn(
+                    sessionId,
+                    request.question(),
+                    intent,
+                    executableSql,
+                    insights.summary(),
+                    finalDatasourceId,
+                    currentUserId
+            );
+        } else {
+            sessionService.recordTurn(
+                    sessionId,
+                    request.question(),
+                    intent,
+                    executableSql,
+                    insights.summary(),
+                    finalDatasourceId
+            );
+        }
 
         // 12. Return complete response
         return new AnalyticsQueryResponse(

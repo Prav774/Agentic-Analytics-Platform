@@ -75,6 +75,7 @@ interface QueryWorkspaceProps {
   loading: boolean;
   error: string | null;
   lastResult: QueryResultResponse | null;
+  canExecuteManualSql?: boolean;
 }
 
 export const QueryWorkspace: React.FC<QueryWorkspaceProps> = ({
@@ -89,6 +90,7 @@ export const QueryWorkspace: React.FC<QueryWorkspaceProps> = ({
   loading,
   error,
   lastResult,
+  canExecuteManualSql = true,
 }) => {
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -111,7 +113,7 @@ export const QueryWorkspace: React.FC<QueryWorkspaceProps> = ({
     // Ctrl+Enter or Cmd+Enter to execute query
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      if (!loading && isDatasourceConnected) {
+      if (!loading && isDatasourceConnected && canExecuteManualSql) {
         onExecuteQuery();
       }
     }
@@ -119,6 +121,19 @@ export const QueryWorkspace: React.FC<QueryWorkspaceProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Role-based Notice for VIEWER */}
+      {!canExecuteManualSql && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-300 flex items-start space-x-2">
+          <svg className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <strong className="font-semibold block text-amber-200">Viewer Role Limitation:</strong>
+            Manual SQL query execution requires <span className="font-semibold text-amber-200">ANALYST</span> or <span className="font-semibold text-amber-200">ADMIN</span> permissions. As a Viewer, you can inspect schemas and ask natural-language questions in the AI Analytics Assistant.
+          </div>
+        </div>
+      )}
+
       {/* Editor & Action Header */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -174,7 +189,8 @@ export const QueryWorkspace: React.FC<QueryWorkspaceProps> = ({
             <button
               type="button"
               onClick={onExecuteQuery}
-              disabled={loading || !isDatasourceConnected || !sql.trim()}
+              disabled={loading || !isDatasourceConnected || !sql.trim() || !canExecuteManualSql}
+              title={!canExecuteManualSql ? "Manual query execution requires ANALYST or ADMIN role" : "Execute SQL Query (Ctrl+Enter)"}
               className="flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (

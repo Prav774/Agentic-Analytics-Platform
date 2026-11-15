@@ -21,7 +21,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/datasources")
-@CrossOrigin(origins = "*")
 public class DatasourceController {
 
     private static final Logger log = LoggerFactory.getLogger(DatasourceController.class);

@@ -135,3 +135,35 @@ export interface AnalyticsQueryResponseData {
   clarificationNeeded: boolean;
   clarificationPrompt: string | null;
 }
+
+// Authentication & RBAC Types
+export type UserRole = "ADMIN" | "ANALYST" | "VIEWER";
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  role: UserRole;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string | null;
+}
+
+export interface AuthResponse {
+  token: string;
+  tokenType: string;
+  expiresIn: number;
+  user: UserProfile;
+}
+
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+}

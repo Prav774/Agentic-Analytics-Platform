@@ -1,11 +1,13 @@
 import React from "react";
-import type { DatasourceSummary } from "../types/api";
+import type { DatasourceSummary, UserProfile } from "../types/api";
 
 interface HeaderProps {
   datasources: DatasourceSummary[];
   loading: boolean;
   onRefresh: () => void;
   apiBaseUrl: string;
+  user?: UserProfile | null;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -13,6 +15,8 @@ export const Header: React.FC<HeaderProps> = ({
   loading,
   onRefresh,
   apiBaseUrl,
+  user,
+  onLogout,
 }) => {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md px-6 py-3.5 shadow-sm">
@@ -37,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Datasources Live Status Badges & Refresh */}
+        {/* Datasources Live Status Badges, Refresh & User Profile */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-xs text-slate-400">
             <span className="text-slate-500">API:</span>
@@ -105,6 +109,51 @@ export const Header: React.FC<HeaderProps> = ({
             </svg>
             <span>{loading ? "Checking..." : "Refresh"}</span>
           </button>
+
+          {/* User Profile & Sign Out */}
+          {user && (
+            <div className="flex items-center space-x-2.5 pl-3 border-l border-slate-800">
+              <div className="flex items-center space-x-2">
+                <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm uppercase">
+                  {user.username.charAt(0)}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <div className="text-xs font-semibold text-slate-200 leading-tight">
+                    {user.username}
+                  </div>
+                  <span
+                    className={`inline-block text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold uppercase ${
+                      user.role === "ADMIN"
+                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                        : user.role === "ANALYST"
+                        ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                        : "bg-slate-700/60 text-slate-300 border border-slate-600/40"
+                    }`}
+                  >
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="rounded-lg border border-slate-700/80 bg-slate-800/80 p-1.5 text-slate-400 hover:text-rose-300 hover:border-rose-500/40 hover:bg-rose-500/10 transition-colors"
+                  title="Sign Out"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>

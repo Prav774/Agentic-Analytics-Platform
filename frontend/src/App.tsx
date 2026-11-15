@@ -6,6 +6,8 @@ import { QueryWorkspace } from "./components/QueryWorkspace";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { SchemaExplorer } from "./components/SchemaExplorer";
 import { DatasourcesOverview } from "./components/DatasourcesOverview";
+import { LoginPage } from "./components/LoginPage";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { api, extractErrorMessage } from "./services/api";
 import type {
   DatasourceSummary,
@@ -13,7 +15,8 @@ import type {
   AnalyticsQueryResponseData,
 } from "./types/api";
 
-export default function App() {
+function Dashboard() {
+  const { user, logout, canExecuteManualSql } = useAuth();
   const [datasources, setDatasources] = useState<DatasourceSummary[]>([]);
   const [selectedDatasourceId, setSelectedDatasourceId] = useState<string>("ecommerce");
   const [activeTab, setActiveTab] = useState<ActiveTab>("ai");
@@ -92,6 +95,10 @@ export default function App() {
   // Execute Manual SQL Query
   const handleExecuteQuery = async () => {
     if (!sql.trim() || !selectedDatasourceId) return;
+    if (!canExecuteManualSql) {
+      setQueryError("Manual query execution requires ANALYST or ADMIN privileges.");
+      return;
+    }
 
     setQueryLoading(true);
     setQueryError(null);
@@ -164,6 +171,8 @@ export default function App() {
         loading={systemLoading}
         onRefresh={loadDatasources}
         apiBaseUrl={api.getBaseUrl()}
+        user={user}
+        onLogout={logout}
       />
 
       {/* Main Layout */}
@@ -176,6 +185,7 @@ export default function App() {
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           tableCount={tableCount}
+          canExecuteManualSql={canExecuteManualSql}
         />
 
         {/* Content Body Area */}
@@ -233,6 +243,7 @@ export default function App() {
                 loading={queryLoading}
                 error={queryError}
                 lastResult={lastResult}
+                canExecuteManualSql={canExecuteManualSql}
               />
 
               <AnalyticsView result={lastResult} loading={queryLoading} />
@@ -261,5 +272,40 @@ export default function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+function AppWithAuth() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-xl tracking-wider animate-pulse">
+          A²
+        </div>
+        <div className="flex items-center space-x-2 text-slate-400 text-xs font-mono">
+          <svg className="animate-spin h-3.5 w-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span>Authenticating Session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return <Dashboard />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppWithAuth />
+    </AuthProvider>
   );
 }
